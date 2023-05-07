@@ -150,7 +150,7 @@ def tell_that_bot_is_alive(message):
 if __name__ == "__main__":
     init_ids()
     while True:
-        #print("Start iteration")
+        print("Start iteration")
 
         # Get updates.
         # last_update_id is update_id of the last update handled by bot 
@@ -158,7 +158,7 @@ if __name__ == "__main__":
         if len(updates) > 0:
             last_update_id = updates[-1].update_id
             bot.process_new_updates(updates)
-            #print("Got updates")
+            print("Got updates")
 
         tasks = get_all_my_tasks()
 
@@ -166,7 +166,7 @@ if __name__ == "__main__":
         #for task in filter_tasks(tasks, mode="datetimed"):
         #    print(task.content, get_time_to_task_in_minutes(task))
 
-        #print("Got tasks")
+        print("Got tasks")
         for task in filter_tasks(tasks, mode="datetimed"):
             if get_time_to_task_in_minutes(task) in timestamps_to_send_notifications:
                 bot.send_message(
@@ -174,5 +174,5 @@ if __name__ == "__main__":
                     f"{task.content} in {get_time_to_task_in_minutes(task)} minutes",
                 )
 
-        #print("Sleeping")
+        print("Sleeping")
         time.sleep(60)
