@@ -18,10 +18,18 @@ bot = telebot.TeleBot(TELEGRAM_TOKEN)
 project_ids = dict()
 personal_ids = dict()
 last_update_id = 0
+timestamps_to_send_notifications = [10, 30, 60]
 
 def init_ids():
-    """Initializes dicts with ids of projects and personal tasks
-    Pls make sure that you have at least one task in "Inbox" project.
+    """
+    Initializes global dicts with ids of projects and personal tasks
+    WARNING: Make sure that you have at least one task in "Inbox" project
+
+    Returns:
+        None
+    
+    Raises:
+        IndexError: if there are no tasks in your "Inbox" project
     """
     global project_ids, personal_ids
     for prj in api.get_projects():
@@ -29,9 +37,7 @@ def init_ids():
         if prj.is_inbox_project:
             # Make sure that you have at least one task in "Inbox" project
             try:
-                personal_ids["Me"] = api.get_tasks(project_id=project_ids[prj.name])[
-                    0
-                ].creator_id
+                personal_ids["Me"] = api.get_tasks(project_id=project_ids[prj.name])[0].creator_id
             except IndexError:
                 print("You don't have any task in " + prj.name)
                 raise
@@ -49,8 +55,10 @@ def get_current_time() -> str:
     return now.strftime("%Y-%m-%dT%H:%M:%S")
 
 
-def get_all_my_tasks():
-    """Returns list of all tasks in all projects assigned to me (including Inbox tasks)"""
+def get_all_my_tasks() -> list[Task]:
+    """
+    Returns list of all tasks in all projects assigned to 'me' (including Inbox tasks)
+    """
     all_my_tasks = list()
     for project in project_ids:
         if project == "Inbox":
@@ -131,6 +139,9 @@ def get_time_to_task_in_minutes(task: Task) -> int:
     func=lambda msg: msg.from_user.id == MY_TELEGRAM_ID and msg.text == "1"
 )
 def tell_that_bot_is_alive(message):
+    """
+    Sends message saying that bot is alive
+    """
     bot.reply_to(message, "Да")
 
 
@@ -139,27 +150,29 @@ def tell_that_bot_is_alive(message):
 if __name__ == "__main__":
     init_ids()
     while True:
-        print("Start iteration")
+        #print("Start iteration")
+
+        # Get updates.
+        # last_update_id is update_id of the last update handled by bot 
         updates = bot.get_updates(last_update_id + 1, long_polling_timeout=1)
         if len(updates) > 0:
             last_update_id = updates[-1].update_id
             bot.process_new_updates(updates)
-            print("Got updates")
-        else:
-            print("No updates")
+            #print("Got updates")
 
         tasks = get_all_my_tasks()
-        # Only for debugging
-        for task in filter_tasks(tasks, mode="datetimed"):
-            print(task.content, get_time_to_task_in_minutes(task))
 
-        print("Got tasks")
+        # Only for debugging
+        #for task in filter_tasks(tasks, mode="datetimed"):
+        #    print(task.content, get_time_to_task_in_minutes(task))
+
+        #print("Got tasks")
         for task in filter_tasks(tasks, mode="datetimed"):
-            if get_time_to_task_in_minutes(task) in (10, 30, 60):
+            if get_time_to_task_in_minutes(task) in timestamps_to_send_notifications:
                 bot.send_message(
                     MY_TELEGRAM_ID,
                     f"{task.content} in {get_time_to_task_in_minutes(task)} minutes",
                 )
 
-        print("Sleeping")
+        #print("Sleeping")
         time.sleep(60)
