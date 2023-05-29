@@ -20,14 +20,15 @@ personal_ids = dict()
 last_update_id = 0
 timestamps_to_send_notifications = [10, 30, 60]
 
+
 def init_ids():
     """
-    Initializes global dicts with ids of projects and personal tasks
+    Initializes global dicts with id-s of projects and personal tasks
     WARNING: Make sure that you have at least one task in "Inbox" project
 
     Returns:
         None
-    
+
     Raises:
         IndexError: if there are no tasks in your "Inbox" project
     """
@@ -74,17 +75,17 @@ def get_all_my_tasks() -> list[Task]:
 
 def filter_tasks(list_of_tasks: list[Task], mode: str) -> list[Task]:
     """
-    Filters list of tasks based on mode
+    Filters list of tasks based on "mode" parameter
 
     Args:
         list_of_tasks: list of tasks to filter
         mode: string with one of the following values: "dated", "datetimed", "today"
 
     Returns:
-        Filtered list of tasks based on 'mode' parameter
+        Filtered list of tasks based on "mode" parameter
 
     Raises:
-        ValueError: if 'mode' parameter is invalid
+        ValueError: if "mode" parameter is invalid
     """
     if mode == "dated":
         return [task for task in list_of_tasks if task.due and not task.due.datetime]
@@ -105,7 +106,7 @@ def filter_tasks(list_of_tasks: list[Task], mode: str) -> list[Task]:
 
 def get_time_to_task(task: Task) -> datetime.timedelta:
     """
-    Returns time to task
+    Returns remaining time to task
 
     Args:
         task: task to get time to
@@ -124,7 +125,7 @@ def get_time_to_task(task: Task) -> datetime.timedelta:
 
 def get_time_to_task_in_minutes(task: Task) -> int:
     """
-    Returns time to task in minutes
+    Returns remainig time to task in minutes
 
     Args:
         task: task to get time to
@@ -142,9 +143,27 @@ def tell_that_bot_is_alive(message):
     """
     Sends message saying that bot is alive
     """
-    bot.reply_to(message, "Да")
+    bot.reply_to(message, "Alive")
 
 
+@bot.message_handler(
+    func=lambda msg: msg.from_user.id == MY_TELEGRAM_ID
+    and (msg.text == "today" or msg.text == "Сегодня")
+)
+def send_today_tasks(message):
+    """
+    Sends list of today's tasks
+    """
+    today_tasks = filter_tasks(get_all_my_tasks(), mode="today")
+    str_to_send = ""
+
+    for task in today_tasks:
+        if task.due.datetime:
+            # slice [11:16] is used to get time in format HH:MM from isoformat
+            str_to_send += task.content + "    " + task.due.datetime[11:16] + "\n"
+        else:
+            str_to_send += task.content + "\n"
+    bot.send_message(MY_TELEGRAM_ID, str_to_send)
 
 
 if __name__ == "__main__":
@@ -153,7 +172,7 @@ if __name__ == "__main__":
         print("Start iteration")
 
         # Get updates.
-        # last_update_id is update_id of the last update handled by bot 
+        # last_update_id is update_id of the last update handled by bot
         updates = bot.get_updates(last_update_id + 1, long_polling_timeout=1)
         if len(updates) > 0:
             last_update_id = updates[-1].update_id
@@ -162,8 +181,8 @@ if __name__ == "__main__":
 
         tasks = get_all_my_tasks()
 
-        # Only for debugging
-        #for task in filter_tasks(tasks, mode="datetimed"):
+        # Only for debugging but can be useful
+        # for task in filter_tasks(tasks, mode="datetimed"):
         #    print(task.content, get_time_to_task_in_minutes(task))
 
         print("Got tasks")
